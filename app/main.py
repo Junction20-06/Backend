@@ -10,3 +10,7 @@ app.include_router(question.router, prefix="/question", tags=["question"])
 app.include_router(attempts.router, prefix="/attempts", tags=["attempts"])
 app.include_router(report.router, prefix="/report", tags=["report"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"])
+
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the Personalized AI Tutor API"}
