@@ -10,3 +10,4 @@ class Attempt(Base):
     question_id = Column(String, nullable=False)
     is_correct = Column(Boolean, nullable=False)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
+    difficulty = Column(String, nullable=False) # 난이도('하', '중', '상') 기록

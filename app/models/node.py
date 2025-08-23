@@ -1,6 +1,6 @@
 # Backend/app/models/node.py
 
-from sqlalchemy import Column, Integer, String, Enum
+from sqlalchemy import Column, Integer, String, Enum, ForeignKey
 from app.core.database import Base
 from app.schemas.node import NodeStatus
 
@@ -17,3 +17,11 @@ class Node(Base):
         server_default=NodeStatus.not_started.value, # .value를 추가하여 문자열 값으로 설정
         nullable=False
     )
+
+class ProfileNodeDetail(Base):
+    __tablename__ = "profile_node_details"
+
+    id = Column(Integer, primary_key=True, index=True)
+    profile_id = Column(Integer, ForeignKey("profiles.id"), nullable=False)
+    node_id = Column(Integer, ForeignKey("nodes.id"), nullable=False)
+    score = Column(Integer, default=0, nullable=False)
