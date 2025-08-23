@@ -10,45 +10,54 @@ from app.core.config import settings
 
 PDF_PATH = os.path.join(os.path.dirname(__file__), "../../수학_교육과정.pdf")
 
-def parse_nodes_from_structured_data(elements: list):
-    nodes = []
-    current_subject = ""
+TARGET_SUBJECTS = ["수학", "수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계", "기하"]
+
+def parse_target_nodes(elements: list):
+    subjects_tree = []
 
     for element in elements:
-        if element.get("type") == "table" and "내용 체계" in element.get("text", ""):
-            html_content = element.get("content", {}).get("html", "")
-            if not html_content:
+        if element.get("type") != "table":
+            continue
+
+        html_content = element.get("content", {}).get("html", "")
+        if not html_content:
+            continue
+
+        rows = re.findall(r'<tr.*?>(.*?)</tr>', html_content, re.DOTALL)
+
+        for row in rows[1:]:
+            cells = re.findall(r'<td.*?>(.*?)</td>', row, re.DOTALL)
+
+            def clean_text(text):
+                return re.sub(r'<[^>]+>', '', text).strip()
+
+            if len(cells) < 4:
                 continue
 
-            rows = re.findall(r'<tr.*?>(.*?)</tr>', html_content, re.DOTALL)
+            subject_text = clean_text(cells[0])
+            if subject_text not in TARGET_SUBJECTS:
+                continue  # 🎯 타겟 과목만 추출
 
-            for row in rows[1:]:
-                cells = re.findall(r'<td.*?>(.*?)</td>', row, re.DOTALL)
+            concept = clean_text(cells[1])
+            elements_text = clean_text(cells[3])
 
-                def clean_text(text):
-                    return re.sub(r'<[^>]+>', '', text).strip()
+            if not concept or not elements_text:
+                continue
 
-                if len(cells) < 4:
-                    continue
+            element_list = [e.strip() for e in elements_text.split('•') if e.strip()]
 
-                subject_text = clean_text(cells[0])
-                if subject_text:
-                    current_subject = subject_text
+            # 과목 트리 찾기
+            subject_node = next((s for s in subjects_tree if s["subject"] == subject_text), None)
+            if not subject_node:
+                subject_node = {"subject": subject_text, "concepts": []}
+                subjects_tree.append(subject_node)
 
-                concept = clean_text(cells[1])
-                elements_text = clean_text(cells[3])
+            subject_node["concepts"].append({
+                "concept": concept,
+                "elements": element_list
+            })
 
-                if current_subject and concept and '•' in elements_text:
-                    element_list = [e.strip() for e in elements_text.split('•') if e.strip()]
-                    for el in element_list:
-                        nodes.append({
-                            "subject": current_subject,
-                            "concept": concept,
-                            "element": el,
-                            "status": "not_started"  # ✅ 기본값 넣어줌
-                        })
-
-    return nodes
+    return subjects_tree
 
 async def seed_nodes():
     if not os.path.exists(PDF_PATH):
@@ -107,7 +116,7 @@ async def seed_nodes():
         print("구조화 데이터 없음")
         return
 
-    nodes_to_add = parse_nodes_from_structured_data(elements)
+    nodes_to_add = parse_target_nodes(elements)
     if not nodes_to_add:
         print("노드 없음")
         return
