@@ -1,17 +1,25 @@
-FROM python:3.12-slim
+# 1. Python 베이스 이미지
+FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
+# 2. 작업 디렉토리 생성
 WORKDIR /app
 
-# 의존성
-COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# 3. 시스템 패키지 설치 (PostgreSQL 드라이버 등)
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# 소스
+# 4. requirements.txt 복사 & 설치
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 5. 소스 복사
 COPY . .
 
-# Railway가 주입하는 PORT 사용해 uvicorn 실행
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# 6. 환경 변수 (Railway에서 주입됨)
+ENV PORT=8000
+EXPOSE 8000
+
+# 7. 실행 (uvicorn)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
