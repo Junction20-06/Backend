@@ -122,7 +122,7 @@ async def seed_nodes():
         return
 
     async with SessionLocal() as db:
-        await db.execute(Node.__table__.delete())
-        await db.execute(insert(Node), nodes_to_add)
+        # await db.execute(Node.__table__.delete())
+        # await db.execute(insert(Node), nodes_to_add)
         await db.commit()
         print(f"총 {len(nodes_to_add)}개의 노드를 저장했습니다.")
