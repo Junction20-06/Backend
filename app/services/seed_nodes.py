@@ -207,7 +207,7 @@ async def seed_nodes():
         return
 
     # 원하는 영역만: {"확률과 통계"}  (여러 개면 집합에 추가)
-    target_subjects = ["수학", "수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계", "기하"]
+    target_subjects = {"수학", "수학Ⅰ", "수학Ⅱ", "미적분", "확률과 통계", "기하"}
     tree, rows = parse_nodes_tree_and_rows(elements, target_subjects=target_subjects)
 
     if not rows:
