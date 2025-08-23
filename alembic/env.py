@@ -4,9 +4,9 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# ✅ app 경로 추가
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
+from app.core.config import settings
 from app.core.database import Base
 from app import models  # 모든 모델 import 필요
 
@@ -18,12 +18,8 @@ target_metadata = Base.metadata
 
 def run_migrations_offline():
     """오프라인 모드 (SQL 스크립트 생성)"""
-    url = os.getenv("POSTGRES_URL")
-
-    url = url.replace("+asyncpg", "")
-
     context.configure(
-        url=url,
+        url=config.get_main_option("sqlalchemy.url"),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -34,15 +30,8 @@ def run_migrations_offline():
 
 def run_migrations_online():
     """온라인 모드 (DB 직접 마이그레이션)"""
-    url = os.getenv("POSTGRES_URL")
-
-    sync_url = url.replace("+asyncpg", "")
-
-    configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = sync_url
-
     connectable = engine_from_config(
-        configuration,
+        config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )

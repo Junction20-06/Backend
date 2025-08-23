@@ -1,5 +1,11 @@
-import httpx
+from openai import AsyncOpenAI # ✅ AsyncOpenAI 사용
 from app.core.config import settings
+
+# ✅ client를 전역으로 초기화하여 재사용
+client = AsyncOpenAI(
+    api_key=settings.UPSTAGE_API_KEY,
+    base_url="https://api.upstage.ai/v1"
+)
 
 async def generate_question(concept: str, element: str):
     prompt = f"""
@@ -19,11 +25,19 @@ async def generate_question(concept: str, element: str):
 개념: {concept}
 내용 요소: {element}
 """
-    url = "https://api.upstage.ai/v1/solar"
-    headers = {"Authorization": f"Bearer {settings.UPSTAGE_API_KEY}"}
-    data = {"input": prompt, "response_format": "json_object"}
-
-    async with httpx.AsyncClient() as client:
-        res = await client.post(url, headers=headers, json=data)
-        res.raise_for_status()
-        return res.json()
+    # ✅ openai 라이브러리를 사용하여 API 호출
+    chat_completion = await client.chat.completions.create(
+        model="solar-1-mini", # 범용 모델명으로 수정 (solar-pro2는 특정 모델일 수 있음)
+        messages=[
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        response_format={"type": "json_object"}, # JSON 출력 형식 지정
+        stream=False # 스트리밍 없이 한번에 응답 받기
+    )
+    
+    # JSON 문자열을 파싱할 필요 없이 바로 dict 객체로 반환
+    import json
+    return json.loads(chat_completion.choices[0].message.content)
