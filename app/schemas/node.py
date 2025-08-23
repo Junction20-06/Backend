@@ -15,5 +15,4 @@ class NodeOut(BaseModel):
     status: NodeStatus
 
     class Config:
-        from_attributes = True
-
+        orm_mode = True
