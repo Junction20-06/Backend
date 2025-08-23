@@ -42,7 +42,7 @@ async def get_question_by_difficulty(profile_id: int, node_id: int, db: AsyncSes
     detail = detail_result.scalar_one_or_none()
 
     if not detail:
-        detail = ProfileNodeDetail(profile_id=profile_id, node_id=node_id, score=0)
+        detail = ProfileNodeDetail(profile_id=profile_id, node_id=node_id, score=30)
         db.add(detail)
         await db.commit()
         await db.refresh(detail)
