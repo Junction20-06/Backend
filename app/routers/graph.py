@@ -1,6 +1,6 @@
 # Backend/app/routers/graph.py
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import SessionLocal
@@ -14,7 +14,7 @@ async def get_db():
         yield session
 
 @router.get("/nodes/{profile_id}", response_model=list[NodeOut])
-async def get_nodes_for_user(profile_id: int, db: AsyncSession = Depends(get_db)):
+async def get_all_nodes_for_user(profile_id: int, db: AsyncSession = Depends(get_db)):
     """특정 사용자의 학습 상태가 포함된 모든 노드 목록 조회"""
     
     # 1. 모든 노드 정보를 가져옴
@@ -45,3 +45,34 @@ async def get_nodes_for_user(profile_id: int, db: AsyncSession = Depends(get_db)
         response_data.append(node_data)
         
     return response_data
+
+@router.get("/nodes/{profile_id}/{node_id}", response_model=NodeOut)
+async def get_node_for_user(profile_id: int, node_id: int, db: AsyncSession = Depends(get_db)):
+    """특정 사용자의 특정 노드 정보 조회"""
+
+    # 1. 특정 노드 정보를 가져옴
+    node_result = await db.execute(select(Node).where(Node.id == node_id))
+    node = node_result.scalar_one_or_none()
+
+    if not node:
+        raise HTTPException(status_code=404, detail="Node not found")
+
+    # 2. 해당 사용자의 특정 노드에 대한 학습 진행 상태를 가져옴
+    detail_result = await db.execute(
+        select(ProfileNodeDetail).where(
+            ProfileNodeDetail.profile_id == profile_id,
+            ProfileNodeDetail.node_id == node_id
+        )
+    )
+    user_detail = detail_result.scalar_one_or_none()
+
+    # 3. 노드 정보와 사용자 상태를 조합하여 최종 응답 생성
+    current_status = user_detail.status if user_detail else NodeStatus.not_started
+
+    return NodeOut(
+        id=node.id,
+        subject=node.subject,
+        concept=node.concept,
+        element=node.element,
+        status=current_status
+    )
