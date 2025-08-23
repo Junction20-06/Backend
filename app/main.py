@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from app.routers import profile, graph, question, attempts, report, admin
 
-app = FastAPI(title="나만의 AI 선생님")
+app = FastAPI(title="Mentor AI")
 
 # 라우터 등록
 app.include_router(profile.router, prefix="/profile", tags=["profile"])
