@@ -1,7 +1,9 @@
-from openai import AsyncOpenAI # ✅ AsyncOpenAI 사용
+from fastapi import HTTPException
+from openai import AsyncOpenAI
 from app.core.config import settings
+import json
 
-# ✅ client를 전역으로 초기화하여 재사용
+# client를 전역으로 초기화하여 재사용
 client = AsyncOpenAI(
     api_key=settings.UPSTAGE_API_KEY,
     base_url="https://api.upstage.ai/v1"
@@ -25,19 +27,32 @@ async def generate_question(concept: str, element: str):
 개념: {concept}
 내용 요소: {element}
 """
-    # ✅ openai 라이브러리를 사용하여 API 호출
-    chat_completion = await client.chat.completions.create(
-        model="solar-1-mini", # 범용 모델명으로 수정 (solar-pro2는 특정 모델일 수 있음)
-        messages=[
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        response_format={"type": "json_object"}, # JSON 출력 형식 지정
-        stream=False # 스트리밍 없이 한번에 응답 받기
-    )
-    
-    # JSON 문자열을 파싱할 필요 없이 바로 dict 객체로 반환
-    import json
-    return json.loads(chat_completion.choices[0].message.content)
+    try:
+        # openai 라이브러리를 사용하여 API 호출
+        chat_completion = await client.chat.completions.create(
+            model="solar-pro2",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            response_format={"type": "json_object"},
+            stream=False,
+            # 타임아웃을 넉넉하게 30초로 설정
+            timeout=30.0 
+        )
+        
+        response_content = chat_completion.choices[0].message.content
+        
+        # AI가 반환한 내용이 유효한 JSON인지 파싱 시도
+        return json.loads(response_content)
+
+    # API 키가 잘못되었거나, Upstage 서버에서 인증 오류가 발생한 경우
+    except Exception as e:
+        # 실제 운영 환경에서는 print 대신 logging을 사용하는 것이 좋습니다.
+        print(f"An unexpected error occurred: {e}") 
+        raise HTTPException(
+            status_code=503, 
+            detail="AI 모델 서비스에 문제가 발생했습니다. 잠시 후 다시 시도해 주세요."
+        )
