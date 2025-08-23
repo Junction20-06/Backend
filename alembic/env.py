@@ -1,33 +1,58 @@
-import sys, os
+import sys
+import os
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
+# ✅ app 경로 추가
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from app.core.database import Base
-from app import models  # 모델 import 필요
+from app import models  # 모든 모델 import 필요
 
+# Alembic 기본 설정
 config = context.config
 fileConfig(config.config_file_name)
 target_metadata = Base.metadata
 
+
 def run_migrations_offline():
+    """오프라인 모드 (SQL 스크립트 생성)"""
     url = os.getenv("POSTGRES_URL")
-    context.configure(url=url, target_metadata=target_metadata, literal_binds=True)
+
+    url = url.replace("+asyncpg", "")
+
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
     with context.begin_transaction():
         context.run_migrations()
 
+
 def run_migrations_online():
+    """온라인 모드 (DB 직접 마이그레이션)"""
+    url = os.getenv("POSTGRES_URL")
+
+    sync_url = url.replace("+asyncpg", "")
+
+    configuration = config.get_section(config.config_ini_section)
+    configuration["sqlalchemy.url"] = sync_url
+
     connectable = engine_from_config(
-        {"sqlalchemy.url": os.getenv("POSTGRES_URL")},
+        configuration,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-    with connectable.connect() as conn:
-        context.configure(connection=conn, target_metadata=target_metadata)
+
+    with connectable.connect() as connection:
+        context.configure(connection=connection, target_metadata=target_metadata)
+
         with context.begin_transaction():
             context.run_migrations()
+
 
 if context.is_offline_mode():
     run_migrations_offline()
