@@ -13,4 +13,4 @@ app.include_router(admin.router, prefix="/admin", tags=["admin"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the Personalized AI Tutor API"}
+    return {"message": "Welcome to Mentor AI"}
