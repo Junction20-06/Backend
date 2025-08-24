@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.database import SessionLocal
-from app.services.solar_ai import generate_question
+from app.services.question_crew import generate_question_crew 
 from app.models.node import Node
 from app.models.node import ProfileNodeDetail  # 새로 추가한 모델 import
 
@@ -64,8 +64,7 @@ async def get_question_by_difficulty(profile_id: int, node_id: int, db: AsyncSes
         points_to_next_level = max(0, next_level_min_score - current_score)
 
     # 5. 결정된 난이도로 AI에게 문제 생성 요청
-    question = await generate_question(node.concept, node.element, current_difficulty)
-    
+    question = await generate_question_crew(node.concept, node.element, current_difficulty)    
     # 6. 추가 정보와 함께 응답 반환
     question["points_to_next_level"] = points_to_next_level
     question["current_difficulty"] = current_difficulty

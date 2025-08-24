@@ -5,7 +5,7 @@ from sqlalchemy import select
 from app.core.database import SessionLocal
 from app.models.node import Node, ProfileNodeDetail
 from app.schemas.node import NodeStatus
-from app.services.solar_ai import generate_question
+from app.services.question_crew import generate_question_crew
 
 router = APIRouter()
 
@@ -44,6 +44,5 @@ async def get_comprehensive_test_question(profile_id: int, db: AsyncSession = De
     selected_node = random.choice(target_nodes)
 
     # 4. 선택된 노드로 문제 생성 (난이도 '중' 고정)
-    question = await generate_question(selected_node.concept, selected_node.element, "중")
-    
+    question = await generate_question_crew(selected_node.concept, selected_node.element, "중")    
     return question
